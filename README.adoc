@@ -1,0 +1,130 @@
+= Pre-requisites
+
+- dotnet core installed
+- a database management tool (https://dbeaver.io/download/)
+
+== Create project
+----
+dotnet new mvc -o webproject-ef_01
+# this will create the project in a new folder named 'webproject-ef_01'
+----
+
+== Install dependencies
+----
+# install application dependencies for EntityFramework and Sqlite
+dotnet add package Microsoft.EntityFrameworkCore.Sqlite
+
+# install application dependencies for migrations support
+dotnet add package Microsoft.EntityFrameworkCore.Designer
+
+# install dotnet entity framework console tools
+dotnet tool install --global dotnet-ef
+----
+
+== Configure database
+----
+// File Models/Database/Student.cs
+
+namespace web-project-ef_01.Models.Database{
+    public class Student{
+        public int Id {get; set;}
+        public string Name {get; set;}
+    }
+}
+
+// File Models/Database/AppDbContext.cs
+using Microsoft.EntityFrameworkCore;
+
+namespace web-project-ef_01.Models.Database
+{
+    public class AppDbContext : DbContext
+    {
+
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        {
+        }
+
+        public DbSet<Student> Students { get; set; }
+    }
+}
+
+//File appsettings.json
+
+// "DbConnection": "Data Source=university.sqlite",
+
+// File Startup.cs
+using web-project-ef_01.Models.Database;
+using Microsoft.EntityFrameworkCore;
+...
+  public void ConfigureServices(IServiceCollection services)
+  {
+      services.AddControllersWithViews();
+      services.AddDbContext<AppDbContext>(options =>
+          options.UseSqlite(Configuration["DbConnection"])
+      );
+  }
+
+----
+
+== Initialize database
+----
+# add the first migration to initialize the database
+dotnet ef migrations add InitializeDatabase
+
+# then, we update the database by applying the migrations
+dotnet ef database update
+
+----
+
+== Test the storage
+----
+// File HomeController.cs
+public class HomeController : Controller {
+  private readonly ILogger<HomeController> logger;
+  private readonly AppDbContext dbContext;
+
+  public HomeController(ILogger<HomeController> logger,AppDbContext dbContext)
+  {
+    this.logger = logger;
+    this.dbContext = dbContext;
+  }
+  ...
+  public IActionResult Index()
+  {
+    if(dbContext.Students.Count() == 0){
+      dbContext.Add(new Student{Id = 1, Name = "Reina Jimenez"});
+      dbContext.Add(new Student{Id = 2, Name = "Roxana Jimenez"});
+      dbContext.Add(new Student{Id = 3, Name = "Olga Jimenez"});
+      dbContext.SaveChanges();
+      logger.LogInformation("New students created");
+    }else{
+      logger.LogInformation("Students not created");
+    }
+    return View();
+  }
+}
+----
+
+Finally execute 'dotnet run' and enter the application page, then check the database, some new tuples will be shown there.
+
+== Adding new columns to the database
+
+Add a new field 'Age'.
+----
+//File Models/Database/Student.cs
+public class Student {
+  ...
+  public int Age {get;set;}
+}
+----
+
+Create a new migration to modify the database:
+----
+# the migration will identify a change
+dotnet ef migrations add StudentAddAge
+
+# apply the migrations
+dotnet ef database update
+----
+
+Verify the changes in your database manager.
