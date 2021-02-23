@@ -15,7 +15,7 @@ namespace web_04_ef_sqlite.Controllers
         private readonly ILogger<HomeController> logger;
         private readonly AppDbContext dbContext;
 
-        public HomeController(ILogger<HomeController> logger,AppDbContext dbContext)
+        public HomeController(ILogger<HomeController> logger, AppDbContext dbContext)
         {
             this.logger = logger;
             this.dbContext = dbContext;
@@ -23,16 +23,42 @@ namespace web_04_ef_sqlite.Controllers
 
         public IActionResult Index()
         {
-            if(dbContext.Students.Count() == 0){
-                dbContext.Add(new Student{Id = 1, Name = "Reina Jimenez"});
-                dbContext.Add(new Student{Id = 2, Name = "Roxana Jimenez"});
-                dbContext.Add(new Student{Id = 3, Name = "Olga Jimenez"});
+            var students = dbContext.Students;
+            var location = GetOrCreateLocation("Heredia, Chuquisaca");
+
+            if (students.Count() == 0)
+            {
+                dbContext.Add(new Student { Name = "Reina Jimenez", Location = location });
+                dbContext.Add(new Student { Name = "Roxana Jimenez", Location = location });
+                dbContext.Add(new Student { Name = "Olga Jimenez", Location = location });
                 dbContext.SaveChanges();
                 logger.LogInformation("New students created");
-            }else{
-                logger.LogInformation("Students not created");
+            }
+            else
+            {
+                foreach (var st in students)
+                {
+                    dbContext.Remove(st);
+                }
+                logger.LogInformation($"{students.Count()} Students removed");
+                dbContext.SaveChanges();
+            }
+            foreach(var st in location.Students){
+                logger.LogInformation($"Location '{location.Name}' contains student '{st.Name}'");
             }
             return View();
+        }
+
+        private Location GetOrCreateLocation(string name)
+        {
+            var location = dbContext.Locations.Where(l => l.Name.Equals(name)).SingleOrDefault();
+            if (location == null)
+            {
+                location = new Location { Name = name };
+                dbContext.Add(location);
+                dbContext.SaveChanges();
+            }
+            return location;
         }
 
         public IActionResult Privacy()

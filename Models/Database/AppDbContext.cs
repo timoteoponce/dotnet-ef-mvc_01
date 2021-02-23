@@ -11,5 +11,6 @@ namespace web_04_ef_sqlite.Models.Database
         }
 
         public DbSet<Student> Students { get; set; }
+        public DbSet<Location> Locations { get; set; }
     }
 }
