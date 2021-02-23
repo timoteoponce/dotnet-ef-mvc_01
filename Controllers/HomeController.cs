@@ -25,13 +25,14 @@ namespace web_04_ef_sqlite.Controllers
         {
             var students = dbContext.Students;
             var location = GetOrCreateLocation("Heredia, Chuquisaca");
+            var mathCourse = GetOrCreateCourse("Math");
+            var bioCourse = GetOrCreateCourse("Biology");
 
             if (students.Count() == 0)
             {
-                dbContext.Add(new Student { Name = "Reina Jimenez", Location = location });
-                dbContext.Add(new Student { Name = "Roxana Jimenez", Location = location });
-                dbContext.Add(new Student { Name = "Olga Jimenez", Location = location });
-                dbContext.SaveChanges();
+                createStudent("Reina Jimenez", location, mathCourse);
+                createStudent("Olga Jimenez", location, mathCourse);
+                createStudent("Roxana Jimenez", location, bioCourse);
                 logger.LogInformation("New students created");
             }
             else
@@ -43,10 +44,32 @@ namespace web_04_ef_sqlite.Controllers
                 logger.LogInformation($"{students.Count()} Students removed");
                 dbContext.SaveChanges();
             }
-            foreach(var st in location.Students){
-                logger.LogInformation($"Location '{location.Name}' contains student '{st.Name}'");
-            }
             return View();
+        }
+
+        private Student createStudent(string name, Location location, Course course)
+        {
+            var student = dbContext.Students.Where(s => s.Name.Equals(name)).SingleOrDefault();
+            if (student == null)
+            {
+                student = new Student { Name = name, Location = location };
+                student.Courses.Add(course);
+                dbContext.Add(student);
+                dbContext.SaveChanges();
+            }
+            return student;
+        }
+
+        private Course GetOrCreateCourse(string name)
+        {
+            var course = dbContext.Courses.Where(c => c.Name.Equals(name)).SingleOrDefault();
+            if (course == null)
+            {
+                course = new Course { Name = name };
+                dbContext.Add(course);
+                dbContext.SaveChanges();
+            }
+            return course;
         }
 
         private Location GetOrCreateLocation(string name)
